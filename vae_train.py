@@ -68,22 +68,23 @@ def main():
 
     model = VAEAnomalyTabular(args.input_size, args.latent_size, args.num_resamples, lr=args.lr)
 
-    train_set = rand_dataset()  # set here your dataset
+    train_set = rand_dataset(5000,100)  # set here your dataset
     train_dloader = DataLoader(train_set, args.batch_size)
 
-    val_dataset = rand_dataset()  # set here your dataset
+    val_dataset = rand_dataset(100,100)  # set here your dataset
     val_dloader = DataLoader(val_dataset, args.batch_size)
 
     checkpoint = ModelCheckpoint(
-        filepath=experiment_folder / '{epoch:02d}-{val_loss:.2f}',
+        filename=experiment_folder / '{epoch:02d}-{val_loss:.2f}',
         save_top_k=1,
         verbose=True,
         monitor='val_loss',
         mode='min',
-        prefix='',
         save_last=True,
     )
-
+    
+    trainer = Trainer(max_epochs=args.epochs, callbacks=[checkpoint],)
+    trainer.fit(model, train_dloader, val_dloader)
 
 if __name__ == '__main__':
     main()
