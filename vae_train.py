@@ -8,8 +8,11 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
 from model.VAE import VAEAnomalyTabular
-from vae_dataset import rand_dataset
+from vae_dataset import rand_dataset, VAEDataset
 
 ROOT = Path(__file__).parent
 SAVED_MODELS = ROOT / 'saved_models'
@@ -68,11 +71,20 @@ def main():
 
     model = VAEAnomalyTabular(args.input_size, args.latent_size, args.num_resamples, lr=args.lr)
 
-    train_set = rand_dataset(5000,100)  # set here your dataset
-    train_dloader = DataLoader(train_set, args.batch_size)
+    dataset = pd.read_csv('data/HI_Small_Trans_onehot10000.csv')
+    # use only non-money laundering data for training
+    dataset = dataset[dataset['Is Laundering'] == 0]
+    dataset = dataset.drop(columns=['Is Laundering'])
+    test_ratio = 0.1
+    train_set, val_set = train_test_split(dataset, test_size=test_ratio)
+    train_set = VAEDataset(train_set.reset_index(drop=True))
+    val_set = VAEDataset(val_set.reset_index(drop=True))
 
-    val_dataset = rand_dataset(100,100)  # set here your dataset
-    val_dloader = DataLoader(val_dataset, args.batch_size)
+    #train_set = rand_dataset(5000,100)  # set here your dataset
+    train_dloader = DataLoader(train_set, args.batch_size, shuffle=True)
+
+    #val_set = rand_dataset(100,100)  # set here your dataset
+    val_dloader = DataLoader(val_set, args.batch_size)
 
     checkpoint = ModelCheckpoint(
         filename=experiment_folder / '{epoch:02d}-{val_loss:.2f}',
