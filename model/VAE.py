@@ -184,8 +184,8 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
         loss = self.forward(x)
         if self.global_step % self.log_steps == 0:
             self.log('train_loss', loss['loss'])
-            self.log('train/loss_kl', loss['kl'], prog_bar=False)
-            self.log('train/loss_recon', loss['recon_loss'], prog_bar=False)
+            self.log('train/loss_kl', loss['kl'], prog_bar=True)
+            self.log('train/loss_recon', loss['recon_loss'], prog_bar=True)
             self._log_norm()
 
         return loss
@@ -226,11 +226,11 @@ class VAEAnomalyTabular(VAEAnomalyDetection):
         :return: The untrained encoder model
         """
         return nn.Sequential(
-            nn.Linear(input_size, 500),
+            nn.Linear(input_size, 3000),
             nn.ReLU(),
-            nn.Linear(500, 200),
+            nn.Linear(3000, 1000),
             nn.ReLU(),
-            nn.Linear(200, latent_size * 2)
+            nn.Linear(1000, latent_size * 2)
             # times 2 because this is the concatenated vector of latent mean and variance
         )
 
@@ -242,9 +242,9 @@ class VAEAnomalyTabular(VAEAnomalyDetection):
         :return: the untrained decoder
         """
         return nn.Sequential(
-            nn.Linear(latent_size, 200),
+            nn.Linear(latent_size, 1000),
             nn.ReLU(),
-            nn.Linear(200, 500),
+            nn.Linear(1000, 3000),
             nn.ReLU(),
-            nn.Linear(500, output_size * 2)  # times 2 because this is the concatenated vector of reconstructed mean and variance
+            nn.Linear(3000, output_size * 2)  # times 2 because this is the concatenated vector of reconstructed mean and variance
         )

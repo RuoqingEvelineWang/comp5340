@@ -95,7 +95,7 @@ def main():
         save_last=True,
     )
     
-    trainer = Trainer(max_epochs=args.epochs, callbacks=[checkpoint],)
+    trainer = Trainer(accelerator='auto', max_epochs=args.epochs, callbacks=[checkpoint],)
     trainer.fit(model, train_dloader, val_dloader)
 
 if __name__ == '__main__':
