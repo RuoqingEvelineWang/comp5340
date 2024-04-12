@@ -88,9 +88,9 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
             - z: Sampled latent space.
 
         """
-        pred_result = self.predict(x[0])
-        x = x[0].unsqueeze(0)  # unsqueeze to broadcast input across sample dimension (L)
-        log_lik = Normal(pred_result['recon_mu'], pred_result['recon_sigma']).log_prob(x).mean(
+        pred_result = self.predict(x)
+        x = x.unsqueeze(0)  # unsqueeze to broadcast input across sample dimension (L)
+        log_lik = Normal(pred_result['recon_mu'], pred_result['recon_sigma'].clamp(min=0.0001)).log_prob(x).mean(
             dim=0)  # average over sample dimension
         log_lik = log_lik.mean(dim=0).sum()
         kl = kl_divergence(pred_result['latent_dist'], self.prior).mean(dim=0).sum()
@@ -116,7 +116,7 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
         """
         batch_size = len(x)
         latent_mu, latent_sigma = self.encoder(x).chunk(2, dim=1) #both with size [batch_size, latent_size]
-        latent_sigma = softplus(latent_sigma)
+        latent_sigma = softplus(latent_sigma).clamp(min=0.0001)
         dist = Normal(latent_mu, latent_sigma)
         z = dist.rsample([self.L])  # shape: [L, batch_size, latent_size]
         z = z.view(self.L * batch_size, self.latent_size)
@@ -156,9 +156,9 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
             the input samples under the learned distribution of reconstructed data.
         """
         with torch.no_grad():
-            pred = self.predict(x[0])
+            pred = self.predict(x)
         recon_dist = Normal(pred['recon_mu'], pred['recon_sigma'])
-        x = x[0].unsqueeze(0)
+        x = x.unsqueeze(0)
         p = recon_dist.log_prob(x).exp().mean(dim=0).mean(dim=-1)  # vector of shape [batch_size]
         return p
 
