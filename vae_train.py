@@ -76,7 +76,7 @@ def main():
     dataset = dataset[dataset['Is Laundering'] == 0]
     dataset = dataset.drop(columns=['Is Laundering'])
     test_ratio = 0.1
-    train_set, val_set = train_test_split(dataset, test_size=test_ratio)
+    train_set, val_set = train_test_split(dataset, test_size=test_ratio, random_state=0)
     train_set = VAEDataset(train_set.reset_index(drop=True))
     val_set = VAEDataset(val_set.reset_index(drop=True))
 
