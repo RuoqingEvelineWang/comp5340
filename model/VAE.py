@@ -40,6 +40,8 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
         self.prior = Normal(0, 1)
         self.log_steps = log_steps
 
+        self.save_hyperparameters(ignore=['encoder', 'decoder'])
+
     @abstractmethod
     def make_encoder(self, input_size: int, latent_size: int) -> nn.Module:
         """
