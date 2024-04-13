@@ -41,6 +41,8 @@ def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('--input-size', '-i', type=int, required=True, dest='input_size', help='Number of input features. In 1D case it is the vector length, in 2D case it is the number of channels')
     parser.add_argument('--latent-size', '-l', type=int, required=True, dest='latent_size', help='Size of the latent space')
+    parser.add_argument('--hidden-1', '-h1', type=int, required=False, dest='hidden_1', help='Size of hidden layer 1 in encoder and decoder')
+    parser.add_argument('--hidden-2', '-h2', type=int, required=False, dest='hidden_2', help='Size of hidden layer 2 in encoder and decoder')
     parser.add_argument('--num-resamples', '-L', type=int, dest='num_resamples', default=10,
                         help='Number of resamples in the latent distribution during training')
     parser.add_argument('--epochs', '-e', type=int, dest='epochs', default=100, help='Number of epochs to train for')
@@ -69,7 +71,7 @@ def main():
     with open(experiment_folder / 'config.yaml', 'w') as f:
         yaml.dump(args, f)
 
-    model = VAEAnomalyTabular(args.input_size, args.latent_size, args.num_resamples, lr=args.lr)
+    model = VAEAnomalyTabular(args.input_size, args.latent_size, args.hidden_1, args.hidden_2, args.num_resamples, lr=args.lr)
 
     dataset = pd.read_csv('data/HI_Small_Trans_onehot10000.csv')
     # use only non-money laundering data for training

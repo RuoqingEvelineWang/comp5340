@@ -19,7 +19,7 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
     This implementation uses PyTorch Lightning to simplify training and improve reproducibility.
     """
 
-    def __init__(self, input_size: int, latent_size: int, L: int = 10, lr: float = 1e-3, log_steps: int = 1_000):
+    def __init__(self, input_size: int, latent_size: int, hidden_1: int, hidden_2: int, L: int = 10, lr: float = 1e-3, log_steps: int = 1_000):
         """
         Initializes the VAEAnomalyDetection model.
 
@@ -35,8 +35,10 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
         self.lr = lr
         self.input_size = input_size
         self.latent_size = latent_size
-        self.encoder = self.make_encoder(input_size, latent_size)
-        self.decoder = self.make_decoder(latent_size, input_size)
+        self.hidden_1 = hidden_1
+        self.hidden_2 = hidden_2
+        self.encoder = self.make_encoder(input_size, latent_size, hidden_1, hidden_2)
+        self.decoder = self.make_decoder(latent_size, input_size, hidden_1, hidden_2)
         self.prior = Normal(0, 1)
         self.log_steps = log_steps
 
@@ -219,7 +221,7 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
 
 class VAEAnomalyTabular(VAEAnomalyDetection):
 
-    def make_encoder(self, input_size, latent_size):
+    def make_encoder(self, input_size, latent_size, hidden_1, hidden_2):
         """
         Simple encoder for tabular data.
         If you want to feed image to a VAE make another encoder function with Conv2d instead of Linear layers.
@@ -228,15 +230,15 @@ class VAEAnomalyTabular(VAEAnomalyDetection):
         :return: The untrained encoder model
         """
         return nn.Sequential(
-            nn.Linear(input_size, 3000),
+            nn.Linear(input_size, hidden_1),
             nn.ReLU(),
-            nn.Linear(3000, 1000),
+            nn.Linear(hidden_1, hidden_2),
             nn.ReLU(),
-            nn.Linear(1000, latent_size * 2)
+            nn.Linear(hidden_2, latent_size * 2)
             # times 2 because this is the concatenated vector of latent mean and variance
         )
 
-    def make_decoder(self, latent_size, output_size):
+    def make_decoder(self, latent_size, output_size, hidden_1, hidden_2):
         """
         Simple decoder for tabular data.
         :param latent_size: size of input latent space
@@ -244,9 +246,9 @@ class VAEAnomalyTabular(VAEAnomalyDetection):
         :return: the untrained decoder
         """
         return nn.Sequential(
-            nn.Linear(latent_size, 1000),
+            nn.Linear(latent_size, hidden_2),
             nn.ReLU(),
-            nn.Linear(1000, 3000),
+            nn.Linear(hidden_2, hidden_1),
             nn.ReLU(),
-            nn.Linear(3000, output_size * 2)  # times 2 because this is the concatenated vector of reconstructed mean and variance
+            nn.Linear(hidden_1, output_size * 2)  # times 2 because this is the concatenated vector of reconstructed mean and variance
         )
