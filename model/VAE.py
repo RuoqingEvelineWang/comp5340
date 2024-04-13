@@ -90,7 +90,7 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
         """
         pred_result = self.predict(x)
         x = x.unsqueeze(0)  # unsqueeze to broadcast input across sample dimension (L)
-        log_lik = Normal(pred_result['recon_mu'], pred_result['recon_sigma'].clamp(min=0.0001)).log_prob(x).mean(
+        log_lik = Normal(pred_result['recon_mu'], pred_result['recon_sigma'].clamp(min=0.000001)).log_prob(x).mean(
             dim=0)  # average over sample dimension
         log_lik = log_lik.mean(dim=0).sum()
         kl = kl_divergence(pred_result['latent_dist'], self.prior).mean(dim=0).sum()
@@ -116,8 +116,8 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
         """
         batch_size = len(x)
         latent_mu, latent_sigma = self.encoder(x).chunk(2, dim=1) #both with size [batch_size, latent_size]
-        latent_sigma = softplus(latent_sigma).clamp(min=0.0001)
-        dist = Normal(latent_mu, latent_sigma)
+        latent_sigma = softplus(latent_sigma)
+        dist = Normal(latent_mu, latent_sigma.clamp(min=0.000001))
         z = dist.rsample([self.L])  # shape: [L, batch_size, latent_size]
         z = z.view(self.L * batch_size, self.latent_size)
         recon_mu, recon_sigma = self.decoder(z).chunk(2, dim=1)
