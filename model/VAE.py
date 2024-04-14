@@ -132,7 +132,7 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
                     latent_sigma=latent_sigma, recon_mu=recon_mu,
                     recon_sigma=recon_sigma, z=z)
 
-    def is_anomaly(self, x: torch.Tensor, alpha: float = 0.05) -> torch.Tensor:
+    def is_anomaly(self, x: torch.Tensor, alpha: float = 0.12) -> torch.Tensor:
         """
         Determines if input samples are anomalous based on a given threshold.
         
@@ -145,7 +145,7 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
             normal sample.
         """
         p = self.reconstructed_probability(x)
-        return p
+        return p < alpha
 
     def reconstructed_probability(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -163,7 +163,7 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
             pred = self.predict(x)
         recon_dist = Normal(pred['recon_mu'], pred['recon_sigma'])
         x = x.unsqueeze(0)
-        p = recon_dist.log_prob(x).exp().mean(dim=0).mean(dim=-1)  # vector of shape [batch_size]
+        p = recon_dist.log_prob(x).exp().mean(dim=0).mean(dim=-1)*0.01  # vector of shape [batch_size]
         return p
 
     def generate(self, batch_size: int = 1) -> torch.Tensor:

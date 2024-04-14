@@ -1,36 +1,12 @@
 import argparse
-from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
 import torch
-import yaml
 from path import Path
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
-from datetime import datetime
-
+from model.VAE import VAEAnomalyTabular
+from vae_dataset import VAEDataset
 import pandas as pd
 from sklearn.model_selection import train_test_split
-
-from model.VAE import VAEAnomalyTabular
-from vae_dataset import rand_dataset, VAEDataset
-
 from sklearn.preprocessing import OrdinalEncoder, TargetEncoder, LabelEncoder, OneHotEncoder, StandardScaler
-
-ROOT = Path(__file__).parent
-SAVED_MODELS = ROOT / 'saved_models'
-
-
-def make_folder_run() -> Path:
-    """
-    Get the folder where to store the experiment. 
-    The folder is named with the current date and time.
-    
-    Returns:
-        Path: the path to the folder where to store the experiment
-    """
-    checkpoint_folder = SAVED_MODELS / datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    checkpoint_folder.makedirs_p()
-    return checkpoint_folder
 
 
 def get_args() -> argparse.Namespace:
@@ -58,22 +34,10 @@ def get_args() -> argparse.Namespace:
 
     return parser.parse_args()
 
-
 def main():
-    """
-    Main function to train the VAE model
-    """
+
     args = get_args()
     print(args)
-    experiment_folder = make_folder_run()
-
-    # copy model folder into experiment folder
-    ROOT.joinpath('model').copytree(experiment_folder / 'model')
-
-    with open(experiment_folder / 'config.yaml', 'w') as f:
-        yaml.dump(args, f)
-
-    model = VAEAnomalyTabular(args.input_size, args.latent_size, args.hidden_1, args.hidden_2, args.num_resamples, lr=args.lr)
 
     dataset = pd.read_csv('data/HI_Small_Trans_ordinal.csv')
 
@@ -92,39 +56,28 @@ def main():
     dataset = dataset[dataset['Is Laundering'] == 0]
     # test set has only class0
     dataset, test_set = train_test_split(dataset, test_size=test_ratio, random_state=0)
-
-    # use only non-money laundering data for training
-    # dataset = dataset[dataset['Is Laundering'] == 0]
-    dataset = dataset.drop(columns=['Is Laundering'])
-    val_ratio = 0.1
-    train_set, val_set = train_test_split(dataset, test_size=val_ratio, random_state=0)
-    train_set = VAEDataset(train_set.reset_index(drop=True))
-    val_set = VAEDataset(val_set.reset_index(drop=True))
-
-    #train_set = rand_dataset(5000,100)  # set here your dataset
-    train_dloader = DataLoader(train_set, args.batch_size, shuffle=True)
-
-    #val_set = rand_dataset(100,100)  # set here your dataset
-    val_dloader = DataLoader(val_set, args.batch_size)
-
-    #test_set = VAEDataset(test_set.drop(columns=['Is Laundering']).reset_index(drop=True))
-    #test_dloader = DataLoader(test_set, args.batch_size, shuffle=False)
+    test_set = VAEDataset(test_set.drop(columns=['Is Laundering']).reset_index(drop=True))
+    test_dloader = DataLoader(test_set, args.batch_size, shuffle=False)
     
     # class1 has all class1 rows
-    #class1 = VAEDataset(class1.drop(columns=['Is Laundering']).reset_index(drop=True))
-    #class1_dloader = DataLoader(class1, args.batch_size, shuffle=False)
+    class1 = VAEDataset(class1.drop(columns=['Is Laundering']).reset_index(drop=True))
+    class1_dloader = DataLoader(class1, args.batch_size, shuffle=False)
 
-    checkpoint = ModelCheckpoint(
-        filename=experiment_folder / '{epoch:02d}-{val_loss:.2f}',
-        save_top_k=1,
-        verbose=True,
-        monitor='val_loss',
-        mode='min',
-        save_last=True,
-    )
+    checkpointfile = torch.load(
+        'C:\\YKT\\NUS_MComp\\CS5340_project\\comp5340\\lightning_logs\\version_49\\checkpoints\\last.ckpt')
+    net = VAEAnomalyTabular(args.input_size, args.latent_size, args.hidden_1, args.hidden_2, args.num_resamples, lr=args.lr)
+    net.load_state_dict(checkpointfile["state_dict"])
+    net.eval()
+
+    for batch in test_dloader:
+        print("Test set (class 0)")
+        with torch.no_grad():
+            print(net.is_anomaly(batch))
     
-    trainer = Trainer(accelerator='auto', max_epochs=args.epochs, callbacks=[checkpoint],)
-    trainer.fit(model, train_dloader, val_dloader)
+    for batch in class1_dloader:
+        print("Test set (class 1)")
+        with torch.no_grad():
+            print(net.is_anomaly(batch))
 
 if __name__ == '__main__':
     main()
