@@ -7,6 +7,7 @@ from vae_dataset import VAEDataset
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder, TargetEncoder, LabelEncoder, OneHotEncoder, StandardScaler
+from sklearn.metrics import confusion_matrix, f1_score
 
 
 def get_args() -> argparse.Namespace:
@@ -69,15 +70,29 @@ def main():
     net.load_state_dict(checkpointfile["state_dict"])
     net.eval()
 
+    y_pred = []
+    y_true = [False] * len(test_set)
     for batch in test_dloader:
-        print("Test set (class 0)")
+        #print("Test set (class 0)")
         with torch.no_grad():
-            print(net.is_anomaly(batch))
+            #print(net.is_anomaly(batch))
+            prob, pred = net.is_anomaly(batch)
+            prob, pred = prob.cpu().numpy(), pred.cpu().numpy()
+            y_pred.extend(pred)
+    
+    temp = [True] * len(class1)
+    y_true.extend(temp)
     
     for batch in class1_dloader:
-        print("Test set (class 1)")
+        #print("Test set (class 1)")
         with torch.no_grad():
-            print(net.is_anomaly(batch))
+            #print(net.is_anomaly(batch))
+            prob, pred = net.is_anomaly(batch)
+            prob, pred = prob.cpu().numpy(), pred.cpu().numpy()
+            y_pred.extend(pred)
+
+    print(confusion_matrix(y_true, y_pred))
+    print(f1_score(y_true, y_pred))
 
 if __name__ == '__main__':
     main()

@@ -19,6 +19,8 @@ from sklearn.preprocessing import OrdinalEncoder, TargetEncoder, LabelEncoder, O
 ROOT = Path(__file__).parent
 SAVED_MODELS = ROOT / 'saved_models'
 
+# number of points to sample from Class 0 (forms train + test)
+NUM_SAMPLES = 100_000
 
 def make_folder_run() -> Path:
     """
@@ -83,12 +85,12 @@ def main():
     dataset = pd.concat([temp, dataset['Is Laundering']], axis=1)
 
     # work on a subset of 25,000 class 0 and ~5,000 class 1
-    temp = dataset[dataset['Is Laundering'] == 0].sample(25_000, random_state=0)
+    temp = dataset[dataset['Is Laundering'] == 0].sample(NUM_SAMPLES, random_state=0)
     # first separate out test set
     class1 = dataset[dataset['Is Laundering']==1]
     dataset = pd.concat([temp, class1], axis=0)
-    num_sample = len(class1)
-    test_ratio = round(num_sample / len(dataset[dataset['Is Laundering'] == 0]), 4)
+    fraud_samples = len(class1)
+    test_ratio = round(fraud_samples / len(dataset[dataset['Is Laundering'] == 0]), 4)
     dataset = dataset[dataset['Is Laundering'] == 0]
     # test set has only class0
     dataset, test_set = train_test_split(dataset, test_size=test_ratio, random_state=0)

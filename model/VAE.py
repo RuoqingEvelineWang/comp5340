@@ -145,7 +145,7 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
             normal sample.
         """
         p = self.reconstructed_probability(x)
-        return p < alpha
+        return p, p < alpha
 
     def reconstructed_probability(self, x: torch.Tensor) -> torch.Tensor:
         """
