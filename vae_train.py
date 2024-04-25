@@ -19,9 +19,6 @@ from sklearn.preprocessing import OrdinalEncoder, TargetEncoder, LabelEncoder, O
 ROOT = Path(__file__).parent
 SAVED_MODELS = ROOT / 'saved_models'
 
-# number of points to sample from Class 0 (forms train + test)
-NUM_SAMPLES = 100_000
-
 def make_folder_run() -> Path:
     """
     Get the folder where to store the experiment. 
