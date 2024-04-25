@@ -17,6 +17,18 @@ class VAEDataset(Dataset):
         sample = torch.tensor(self.data.iloc[idx].values, dtype=torch.float)
         return sample
 
+class VAEwLabels(Dataset):
+    def __init__(self, dataframe):
+        self.data = dataframe.drop(columns=['Is Laundering'])
+        self.label = dataframe['Is Laundering']
+        
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        sample = torch.tensor(self.data.iloc[idx].values, dtype=torch.float)
+        return sample, torch.LongTensor([self.label.iloc[idx]])
+
 def mnist_dataset(train=True) -> Dataset:
     """
     Returns the MNIST dataset for training or testing.
