@@ -92,12 +92,13 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
             - z: Sampled latent space.
 
         """
+        beta = 1
         pred_result = self.predict(x)
         x = x.unsqueeze(0)  # unsqueeze to broadcast input across sample dimension (L)
         log_lik = Normal(pred_result['recon_mu'], pred_result['recon_sigma'].clamp(min=0.000001)).log_prob(x).mean(
             dim=0)  # average over sample dimension
         log_lik = log_lik.mean(dim=0).sum()
-        kl = kl_divergence(pred_result['latent_dist'], self.prior).mean(dim=0).sum()
+        kl = beta * kl_divergence(pred_result['latent_dist'], self.prior).mean(dim=0).sum()
         loss = kl - log_lik
         return dict(loss=loss, kl=kl, recon_loss=log_lik, **pred_result)
 
@@ -161,9 +162,9 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
         """
         with torch.no_grad():
             pred = self.predict(x)
-        recon_dist = Normal(pred['recon_mu'], pred['recon_sigma'])
+        recon_dist = Normal(pred['recon_mu'], pred['recon_sigma'].clamp(min=0.000001))
         x = x.unsqueeze(0)
-        p = recon_dist.log_prob(x).exp().mean(dim=0).mean(dim=-1)*0.01  # vector of shape [batch_size]
+        p = recon_dist.log_prob(x).exp().mean(dim=0).mean(dim=-1)*0.001  # vector of shape [batch_size]
         return p
 
     def generate(self, batch_size: int = 1) -> torch.Tensor:
@@ -187,7 +188,7 @@ class VAEAnomalyDetection(pl.LightningModule, ABC):
         x = batch
         loss = self.forward(x)
         if self.global_step % self.log_steps == 0:
-            self.log('train_loss', loss['loss'])
+            self.log('train_loss', loss['loss'], prog_bar=True)
             self.log('train/loss_kl', loss['kl'], prog_bar=True)
             self.log('train/loss_recon', loss['recon_loss'], prog_bar=True)
             self._log_norm()

@@ -1,69 +1,68 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import OrdinalEncoder, TargetEncoder, LabelEncoder, OneHotEncoder, StandardScaler
+from sklearn.preprocessing import StandardScaler
 
-df = pd.read_csv('data/HI-Small_Trans.csv')
+# Preprocess train
+df_train = pd.read_csv("./data/HI-Small_Trans_processed_w_original_train.csv")
+df_test = pd.read_csv("./data/HI-Small_Trans_processed_w_original_test.csv")
 
-# Concat Bank ID with Account ID (in case of Account ID duplicates)
-df['FromBankAcc'] = df.iloc[:,1].astype(str) + '_' + df.iloc[:,2]
-df['ToBankAcc'] = df.iloc[:,3].astype(str) + '_' + df.iloc[:,4]
+# https://finance.yahoo.com/quote/BTC-USD/history
+# https://www.exchangerates.org.uk/US-Dollar-USD-currency-table.html
+#
+# use the average ex rates over Sep 2022 per Timestamp
+#
+ex_rates = {
+    'Australian Dollar': 1.4958,
+    'Bitcoin': 1/20201.19,
+    'Brazil Real': 5.2299,
+    'Canadian Dollar': 1.3316,
+    'Euro': 1.009, 
+    'Mexican Peso': 20.055,
+    'Ruble': 60.0435,
+    'Rupee': 80.2343,
+    'Saudi Riyal': 3.7598,
+    'Shekel': 3.4489,
+    'Swiss Franc': 0.973,
+    'UK Pound': 0.836,
+    'US Dollar': 1.0,
+    'Yen': 143.0069,
+    'Yuan': 7.0144,
+}
 
-df = df.drop(columns=['Timestamp', 'Account', 'Account.1'])
+df_train['AmountReceivedUSD'] = df_train['AmountReceived']
+df_train['AmountPaidUSD'] = df_train['AmountPaid']
+df_test['AmountReceivedUSD'] = df_test['AmountReceived']
+df_test['AmountPaidUSD'] = df_test['AmountPaid']
+for currency, rate in ex_rates.items():
+    mask = df_train['Receiving Currency'] == currency
+    df_train.loc[mask, 'AmountReceivedUSD'] /= rate
+    mask = df_train['Payment Currency'] == currency
+    df_train.loc[mask, 'AmountPaidUSD'] /= rate
+    #
+    mask = df_test['Receiving Currency'] == currency
+    df_test.loc[mask, 'AmountReceivedUSD'] /= rate
+    mask = df_test['Payment Currency'] == currency
+    df_test.loc[mask, 'AmountPaidUSD'] /= rate
 
-# Convert data types to categorical where applicable
-df['From Bank'] = df['From Bank'].astype('category')
-df['To Bank'] = df['To Bank'].astype('category')
-df['Receiving Currency'] = df['Receiving Currency'].astype('category')
-df['Payment Currency'] = df['Payment Currency'].astype('category')
-df['Payment Format'] = df['Payment Format'].astype('category')
-df['Is Laundering'] = df['Is Laundering'].astype('category')
-df['FromBankAcc'] = df['FromBankAcc'].astype('category')
-df['ToBankAcc'] = df['ToBankAcc'].astype('category')
+# Keep only selected columns
+df_train = df_train[["FromAccount", "ToAccount", \
+                    "PaymentFormat", "AmountReceivedUSD", "AmountPaidUSD", \
+                    "Is Laundering"]]
 
-# # Use only a subset due to ram constraint
-# num_rows = 11_000
-# num_ml = 1_000
+df_test = df_test[["FromAccount", "ToAccount", \
+                    "PaymentFormat", "AmountReceivedUSD", "AmountPaidUSD", \
+                    "Is Laundering"]]
 
-# df_10k = df[:num_rows]
-# df_10k = df_10k[df_10k['Is Laundering'] == 0]
-# print(f"df_10k{df_10k.shape}")
+scaler = StandardScaler()
 
-# df_ml = df[df['Is Laundering'] == 1][:num_ml] 
+tempX = df_train.drop(columns=["Is Laundering"])
+tempX = scaler.set_output(transform='pandas').fit_transform(tempX)
+df_train = pd.concat([tempX, df_train["Is Laundering"]], axis=1)
 
-# df_10k_ml = pd.concat([df_10k.reset_index(drop=True), df_ml.reset_index(drop=True)], axis=0)
-# print(f"df_10k_ml{df_10k_ml.shape}")
-
-# Ordinal encode categorical features
-oe = OrdinalEncoder()
-encoded_cols = oe.fit_transform(df[
-            ['From Bank',
-             'To Bank',
-             'Receiving Currency',
-             'Payment Currency',
-             'Payment Format',
-             'FromBankAcc',
-             'ToBankAcc']])  # Use only a subset due to ram constraint
-encoded_df = pd.DataFrame(encoded_cols)  #.toarray(),
-                        #   columns=ohe.get_feature_names_out(
-                        #       ['From Bank',
-                        #        'To Bank',
-                        #        'Receiving Currency',
-                        #        'Payment Currency',
-                        #        'Payment Format',
-                        #        'FromBankAcc',
-                        #        'ToBankAcc']))
-# print(f"encoded_df{encoded_df.shape}")
-# df_others = df[['Amount Paid', 'Amount Received', 'Is Laundering']][:num_rows]
-# df_others = df_others[df_others['Is Laundering'] == 0]
-# print(f"df_others{df_others.shape}")
-# df_ml_others = df_ml[['Amount Paid', 'Amount Received', 'Is Laundering']]
-# print(f"df_ml_others{df_ml_others.shape}")
-# df_second = pd.concat([df_others.reset_index(drop=True), df_ml_others.reset_index(drop=True)], axis=0)
-# print(f"df_second{df_second.shape}")
-
-df_others = df[['Amount Paid', 'Amount Received', 'Is Laundering']]
-# Concat categorical features with other numerical features + labels
-df = pd.concat([encoded_df, df_others], axis=1)
+tempX = df_test.drop(columns=["Is Laundering"])
+tempX = scaler.set_output(transform='pandas').transform(tempX)
+df_test = pd.concat([tempX, df_test["Is Laundering"]], axis=1)
 
 # Save to disk
-df.to_csv(f'data/HI_Small_Trans_ordinal.csv', index=False)
+df_train.to_csv(f'./data/HI_Small_Trans_ordinal_train_vae-.csv', index=False)
+df_test.to_csv(f'./data/HI_Small_Trans_ordinal_test_vae-.csv', index=False)

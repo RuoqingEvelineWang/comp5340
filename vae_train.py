@@ -77,44 +77,24 @@ def main():
 
     model = VAEAnomalyTabular(args.input_size, args.latent_size, args.hidden_1, args.hidden_2, args.num_resamples, lr=args.lr)
 
-    dataset = pd.read_csv('data/HI_Small_Trans_ordinal.csv')
+    df_train = pd.read_csv('data/HI_Small_Trans_ordinal_train_vae-.csv')
 
-    scaler = StandardScaler()
-    temp = dataset.drop(columns=['Is Laundering'])
-    temp = scaler.set_output(transform='pandas').fit_transform(temp)
-    dataset = pd.concat([temp, dataset['Is Laundering']], axis=1)
+    # Split into train and val sets
+    df_train = df_train.drop(columns=['Is Laundering'])  #.sample(50_000, random_state=0)
 
-    # work on a subset of 25,000 class 0 and ~5,000 class 1
-    temp = dataset[dataset['Is Laundering'] == 0].sample(NUM_SAMPLES, random_state=0)
-    # first separate out test set
-    class1 = dataset[dataset['Is Laundering']==1]
-    dataset = pd.concat([temp, class1], axis=0)
-    fraud_samples = len(class1)
-    test_ratio = round(fraud_samples / len(dataset[dataset['Is Laundering'] == 0]), 4)
-    dataset = dataset[dataset['Is Laundering'] == 0]
-    # test set has only class0
-    dataset, test_set = train_test_split(dataset, test_size=test_ratio, random_state=0)
-
-    # use only non-money laundering data for training
-    # dataset = dataset[dataset['Is Laundering'] == 0]
-    dataset = dataset.drop(columns=['Is Laundering'])
+    ratio = 0.89
+    train_set, val_set = train_test_split(df_train, test_size=ratio, random_state=0)
     val_ratio = 0.1
-    train_set, val_set = train_test_split(dataset, test_size=val_ratio, random_state=0)
+    train_set, val_set = train_test_split(train_set, test_size=val_ratio, random_state=0)
+
+    # val_ratio = 0.1
+    # train_set, val_set = train_test_split(df_train, test_size=val_ratio, random_state=0)
     train_set = VAEDataset(train_set.reset_index(drop=True))
     val_set = VAEDataset(val_set.reset_index(drop=True))
 
-    #train_set = rand_dataset(5000,100)  # set here your dataset
     train_dloader = DataLoader(train_set, args.batch_size, shuffle=True)
 
-    #val_set = rand_dataset(100,100)  # set here your dataset
-    val_dloader = DataLoader(val_set, args.batch_size)
-
-    #test_set = VAEDataset(test_set.drop(columns=['Is Laundering']).reset_index(drop=True))
-    #test_dloader = DataLoader(test_set, args.batch_size, shuffle=False)
-    
-    # class1 has all class1 rows
-    #class1 = VAEDataset(class1.drop(columns=['Is Laundering']).reset_index(drop=True))
-    #class1_dloader = DataLoader(class1, args.batch_size, shuffle=False)
+    val_dloader = DataLoader(val_set, args.batch_size, shuffle=False)
 
     checkpoint = ModelCheckpoint(
         filename=experiment_folder / '{epoch:02d}-{val_loss:.2f}',
