@@ -1,3 +1,5 @@
+# Training and model code adapted from https://github.com/Michedev/VAE_anomaly_detection
+
 import argparse
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
