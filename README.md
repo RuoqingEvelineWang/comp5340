@@ -34,3 +34,12 @@ conda list -e > requirements.txt
 The dataset(s) used for this project can be downloaded from Kaggle using this [link](https://www.kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml).
 
 It is recommended to save the `csv` files into a folder named `data`.
+
+### Processing Scripts
+
+* `data_processing.ipynb`: Run standardised pre-processing steps on raw dataset.
+
+## Train the Models and Make Predictions
+We provide 7 notebooks in the root directory, one for each model type that we experimented with.
+- `bayesian_logistic_regression.ipynb` Feature Engineering & Implementation of Bayesian Logistic Regression Models
+- `naive_bayes.ipynb` Feature Engineering & Implementation of Naive Bayes model
