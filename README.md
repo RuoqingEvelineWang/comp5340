@@ -37,9 +37,12 @@ It is recommended to save the `csv` files into a folder named `data`.
 
 ### Processing Scripts
 
-* `data_processing.ipynb`: Run standardised pre-processing steps on raw dataset.
+* `data_processing.ipynb`: Run standardised pre-processing steps on raw dataset.  
+* `vae_preprocessing.py`: Model-specific preprocessing (additional) before training and inference for VAE.
 
 ## Train the Models and Make Predictions
-We provide 7 notebooks in the root directory, one for each model type that we experimented with.
+We provide several Python files and notebooks in the root directoryfor each model type that we experimented with.
 - `bayesian_logistic_regression.ipynb` Feature Engineering & Implementation of Bayesian Logistic Regression Models
 - `naive_bayes.ipynb` Feature Engineering & Implementation of Naive Bayes model
+- `vae_train.py` Training of VAE model
+- `vae_inference.ipynb` Prediction results and metrics generation, and latent space visualization of VAE 
