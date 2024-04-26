@@ -140,6 +140,7 @@ dependencies:
   - pandas=2.2.1=py311ha02d727_0
   - pango=1.50.7=h05da053_0
   - parso=0.8.3=pyhd3eb1b0_0
+  - patsy=0.5.6=pyhd8ed1ab_0
   - pcre2=10.42=hebb0a14_0
   - pexpect=4.8.0=pyhd3eb1b0_3
   - pillow=10.2.0=py311h5eee18b_0
@@ -167,10 +168,13 @@ dependencies:
   - readline=8.2=h5eee18b_0
   - scikit-learn=1.2.2=py311h6a678d5_1
   - scipy=1.12.0=py311h08b1b3b_0
+  - seaborn=0.13.2=hd8ed1ab_0
+  - seaborn-base=0.13.2=pyhd8ed1ab_0
   - setuptools=68.2.2=py311h06a4308_0
   - six=1.16.0=pyhd3eb1b0_1
   - sqlite=3.41.2=h5eee18b_0
   - stack_data=0.2.0=pyhd3eb1b0_0
+  - statsmodels=0.14.1=py311h1f0f07a_0
   - sysroot_linux-64=2.12=he073ed8_17
   - tbb=2021.8.0=hdb19cb5_0
   - threadpoolctl=3.4.0=pyhc1e730c_0
